@@ -17,9 +17,10 @@ namespace Win10Clean
 {
     public partial class MainWindow : Window
     {
-        const string Version = "2.4.0";
+        const string Version = "2.5.0";
         string _filter = "";
         bool _dark = true;
+        string _logFile;
         readonly List<ICollectionView> _views = new List<ICollectionView>();
 
         // ---- live RAM meter (GlobalMemoryStatusEx) ----
@@ -57,6 +58,12 @@ namespace Win10Clean
         {
             InitializeComponent();
             lblVersion.Text = "v" + Version;
+            try
+            {
+                _logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+                    "win10-clean_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".log");
+            }
+            catch { _logFile = null; }
             BuildCatalog();
             icApps.ItemsSource = _apps;
             icPrivacy.ItemsSource = _privacy;
@@ -521,6 +528,20 @@ namespace Win10Clean
                 txtLog.AppendText(text + Environment.NewLine);
                 txtLog.ScrollToEnd();
             });
+            if (_logFile == null) return;
+            try { File.AppendAllText(_logFile, DateTime.Now.ToString("HH:mm:ss ") + text + Environment.NewLine); }
+            catch { _logFile = null; } // stop trying if the folder is read-only
+        }
+
+        void SetProgress(int value, int max, string status)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                prog.IsIndeterminate = false;
+                prog.Maximum = max < 1 ? 1 : max;
+                prog.Value = value;
+                lblStatus.Text = status;
+            });
         }
 
         void RunCmd(string command)
@@ -577,30 +598,47 @@ namespace Win10Clean
                 return;
             }
 
+            // Confirmation dialog that lists exactly what will run.
+            string list = string.Join(Environment.NewLine, selected.Take(40).Select(i => "  - " + i.Title));
+            if (selected.Count > 40) list += Environment.NewLine + "  ...and " + (selected.Count - 40) + " more";
             var confirm = MessageBox.Show(
-                "Apply " + selected.Count + " selected item(s)?" +
-                (restore ? "\nA restore point will be created first." : "\n(No restore point will be created!)"),
-                "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                "Apply these " + selected.Count + " item(s)?" + Environment.NewLine + Environment.NewLine + list +
+                Environment.NewLine + Environment.NewLine +
+                (restore ? "A system restore point will be created first." : "WARNING: No restore point will be created!"),
+                "Confirm - review the list", MessageBoxButton.YesNo,
+                restore ? MessageBoxImage.Question : MessageBoxImage.Warning);
             if (confirm != MessageBoxResult.Yes) return;
 
             SetBusy(true);
             txtLog.Clear();
             Log("=== win10-clean v" + Version + " - applying ===");
+            if (_logFile != null) Log("Log file: " + _logFile);
+            int total = (restore ? 1 : 0) + selected.Sum(i => i.Commands.Length);
+            int done = 0;
             await Task.Run(() =>
             {
                 if (restore)
                 {
+                    SetProgress(done, total, "Creating restore point...");
                     Log("» Creating system restore point...");
                     RunCmd(RestoreCmd);
+                    SetProgress(++done, total, "Restore point done");
                 }
+                int idx = 0;
                 foreach (var it in selected)
                 {
+                    idx++;
                     Log("» " + it.Title);
-                    foreach (var c in it.Commands) RunCmd(c);
+                    foreach (var c in it.Commands)
+                    {
+                        RunCmd(c);
+                        SetProgress(++done, total, "Applying " + idx + "/" + selected.Count + ": " + it.Title);
+                    }
                 }
                 Log("");
                 Log("=== Finished. " + selected.Count + " item(s) applied. A restart is recommended. ===");
             });
+            SetProgress(total, total, "Finished - " + selected.Count + " item(s) applied");
             SetBusy(false);
         }
 

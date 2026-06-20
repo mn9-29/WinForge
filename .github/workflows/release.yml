@@ -80,6 +80,14 @@ jobs:
             "win10-clean-gui/bin/Release/net48/win10-clean-gui.exe"
           Write-Host "Executable signed."
 
+      - name: Generate SHA256 checksum
+        if: steps.check.outputs.exists == 'false'
+        shell: pwsh
+        run: |
+          $exe = "win10-clean-gui/bin/Release/net48/win10-clean-gui.exe"
+          (Get-FileHash $exe -Algorithm SHA256).Hash | Out-File -Encoding ascii "$exe.sha256"
+          Write-Host "SHA256: $(Get-Content "$exe.sha256")"
+
       - name: Create GitHub Release
         if: steps.check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
@@ -90,4 +98,5 @@ jobs:
             win10-clean.bat
             win10-clean-undo.bat
             win10-clean-gui/bin/Release/net48/win10-clean-gui.exe
+            win10-clean-gui/bin/Release/net48/win10-clean-gui.exe.sha256
           generate_release_notes: true

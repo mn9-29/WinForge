@@ -50,7 +50,7 @@
         <Grid Grid.Row="0" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                 <TextBlock Text="win10-clean" Foreground="#4EC9B0" FontSize="24" FontWeight="Bold"/>
-                <TextBlock x:Name="lblVersion" Text="v2.4.0" Foreground="{DynamicResource FgDimBrush}" FontSize="14"
+                <TextBlock x:Name="lblVersion" Text="v2.5.0" Foreground="{DynamicResource FgDimBrush}" FontSize="14"
                            VerticalAlignment="Bottom" Margin="8,0,0,4"/>
                 <TextBlock Text="  -  tick what you want, then Apply" Foreground="{DynamicResource FgDimBrush}"
                            FontSize="13" VerticalAlignment="Bottom" Margin="6,0,0,4"/>
