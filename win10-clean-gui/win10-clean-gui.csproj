@@ -7,10 +7,15 @@
     <RootNamespace>Win10Clean</RootNamespace>
     <AssemblyName>win10-clean-gui</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <Product>win10-clean</Product>
     <AssemblyTitle>win10-clean GUI</AssemblyTitle>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="app.ico" />
+  </ItemGroup>
 
 </Project>

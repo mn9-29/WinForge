@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Microsoft.Win32;
 
 namespace Win10Clean
 {
     public partial class MainWindow : Window
     {
-        const string Version = "2.2.0";
+        const string Version = "2.3.0";
 
         // ---- live RAM meter (GlobalMemoryStatusEx) ----
         [StructLayout(LayoutKind.Sequential)]
@@ -110,7 +112,7 @@ namespace Win10Clean
         // Disable a startup entry by matching name pattern (uses the same
         // StartupApproved flag Task Manager uses, so it is reversible there).
         static string DisableStartup(string pattern) =>
-            "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$pat='" + pattern + "'; " +
+            "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$pat='" + pattern.Replace("'", "''") + "'; " +
             "$run='HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run'; " +
             "$appr='HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'; " +
             "if(!(Test-Path $appr)){New-Item $appr -Force | Out-Null}; " +
@@ -269,21 +271,17 @@ namespace Win10Clean
                 "taskkill /f /im OneDrive.exe",
                 "\"%SystemRoot%\\System32\\OneDriveSetup.exe\" /uninstall",
                 "\"%SystemRoot%\\SysWOW64\\OneDriveSetup.exe\" /uninstall");
+            Add(_cleanup, "Docker: prune unused data", "Removes stopped containers, dangling images and unused networks (docker system prune -f).",
+                false, false, false, "docker system prune -f");
 
-            // ---- WSL / Startup (situational, all off by default) ----
+            // ---- WSL / Startup ----
             Add(_system, "Optimize WSL2 memory (.wslconfig)",
                 "Caps WSL/Docker RAM at 8GB and auto-returns freed memory to Windows, then shuts WSL down.",
                 false, false, false, WslConfigCmd, "wsl --shutdown");
             Add(_system, "Shut down WSL now", "Stops the WSL2 VM to release its RAM immediately (closes Docker).",
                 false, false, false, "wsl --shutdown");
-            Add(_system, "Disable Docker Desktop autostart", "Stops Docker launching at boot (start it manually when needed).",
-                false, false, false, DisableStartup("*Docker*"));
-            Add(_system, "Disable Discord autostart", "Stops Discord launching at boot.", false, false, false, DisableStartup("*Discord*"));
-            Add(_system, "Disable Steam autostart", "Stops Steam launching at boot.", false, false, false, DisableStartup("*Steam*"));
-            Add(_system, "Disable SteelSeries autostart", "Stops SteelSeries GG / Sonar launching at boot.", false, false, false, DisableStartup("*SteelSeries*"));
-            Add(_system, "Disable GitHub Desktop autostart", "Stops GitHub Desktop launching at boot.", false, false, false, DisableStartup("*GitHub*"));
-            Add(_system, "Disable Epic Games autostart", "Stops Epic Games Launcher at boot.", false, false, false, DisableStartup("*Epic*"));
-            Add(_system, "Disable Spotify autostart", "Stops Spotify launching at boot.", false, false, false, DisableStartup("*Spotify*"));
+            // The actual startup programs on THIS machine are added dynamically below.
+            AddStartupEntries();
 
             // ---- Install (winget) - all off by default, user opts in ----
             Add(_install, "Google Chrome", "Web browser.", false, false, false, Winget("Google.Chrome"));
@@ -295,6 +293,103 @@ namespace Win10Clean
             Add(_install, "Discord", "Voice/chat.", false, false, false, Winget("Discord.Discord"));
             Add(_install, "OBS Studio", "Recording/streaming.", false, false, false, Winget("OBSProject.OBSStudio"));
             Add(_install, "MSI Afterburner", "GPU overclock/monitor.", false, false, false, Winget("Guru3D.Afterburner"));
+        }
+
+        // Reads the actual Run-key startup programs on this machine and adds a
+        // disable item for each (so the list reflects reality, not a fixed set).
+        void AddStartupEntries()
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            AddRunKey(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Run", seen);
+            AddRunKey(Registry.LocalMachine, @"Software\Microsoft\Windows\CurrentVersion\Run", seen);
+            AddRunKey(Registry.LocalMachine, @"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Run", seen);
+        }
+
+        void AddRunKey(RegistryKey root, string path, HashSet<string> seen)
+        {
+            try
+            {
+                using (var k = root.OpenSubKey(path))
+                {
+                    if (k == null) return;
+                    foreach (var name in k.GetValueNames())
+                    {
+                        if (string.IsNullOrEmpty(name) || !seen.Add(name)) continue;
+                        string target = "";
+                        try { target = k.GetValue(name)?.ToString() ?? ""; } catch { }
+                        var it = new TweakItem
+                        {
+                            Title = "Startup: " + name,
+                            Description = "Currently launches at boot: " + target,
+                            Commands = new[] { DisableStartup(name) },
+                            Work = false, Gaming = false, Basic = false
+                        };
+                        _system.Add(it);
+                        _all.Add(it);
+                    }
+                }
+            }
+            catch { /* ignore unreadable keys */ }
+        }
+
+        // ------------------------------------------------------ save / load profile
+        void btnSave_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new SaveFileDialog
+            {
+                Filter = "win10-clean profile (*.w10c)|*.w10c",
+                FileName = "my-profile.w10c"
+            };
+            if (dlg.ShowDialog() != true) return;
+            try
+            {
+                var lines = new List<string>
+                {
+                    "# win10-clean profile v" + Version,
+                    "restorepoint=" + (cbRestore.IsChecked == true)
+                };
+                lines.AddRange(_all.Where(i => i.IsSelected).Select(i => "item=" + i.Title));
+                File.WriteAllLines(dlg.FileName, lines);
+                lblStatus.Text = "Profile saved";
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message, "Save failed"); }
+        }
+
+        void btnLoad_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog { Filter = "win10-clean profile (*.w10c)|*.w10c" };
+            if (dlg.ShowDialog() != true) return;
+            try
+            {
+                var lines = File.ReadAllLines(dlg.FileName);
+                var titles = new HashSet<string>(
+                    lines.Where(l => l.StartsWith("item=")).Select(l => l.Substring(5)),
+                    StringComparer.Ordinal);
+                foreach (var it in _all) it.IsSelected = titles.Contains(it.Title);
+                var rp = lines.FirstOrDefault(l => l.StartsWith("restorepoint="));
+                if (rp != null) cbRestore.IsChecked = rp.EndsWith("True");
+                lblStatus.Text = "Profile loaded (" + titles.Count + " items)";
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message, "Load failed"); }
+        }
+
+        // --------------------------------------------------------------- docker prune
+        async void btnDocker_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                "Run 'docker system prune -f'?\nRemoves stopped containers, dangling images and unused networks.",
+                "Docker cleanup", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes) return;
+            SetBusy(true);
+            txtLog.Clear();
+            Log("» Cleaning Docker (system prune)...");
+            await Task.Run(() =>
+            {
+                RunCmd("docker system df");
+                RunCmd("docker system prune -f");
+            });
+            Log("=== Docker cleanup done. ===");
+            SetBusy(false);
         }
 
         // ----------------------------------------------------------------- presets
@@ -363,6 +458,7 @@ namespace Win10Clean
             btnApply.IsEnabled = !busy;
             btnRevert.IsEnabled = !busy;
             btnExplorer.IsEnabled = !busy;
+            btnDocker.IsEnabled = !busy;
             btnWork.IsEnabled = !busy;
             btnGaming.IsEnabled = !busy;
             btnBasic.IsEnabled = !busy;
