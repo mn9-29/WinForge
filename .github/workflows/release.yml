@@ -1,11 +1,17 @@
 name: Release
 
-# ينشئ Release تلقائياً في GitHub كلما تم رفع وسم (tag) يبدأ بحرف v
-# مثال:  git tag v1.0.1  &&  git push origin v1.0.1
+# ينشئ Release تلقائياً اعتماداً على رقم الإصدار المكتوب داخل win10-clean.bat
+# (المتغير WIN10CLEAN_VERSION). لإصدار نسخة جديدة:
+#   1) غيّر رقم WIN10CLEAN_VERSION في win10-clean.bat
+#   2) حدّث CHANGELOG.md
+#   3) ادفع إلى master  ->  يُنشأ Release جديد تلقائياً
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [ master ]
+    paths:
+      - 'win10-clean.bat'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,12 +22,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from script
+        id: ver
+        run: |
+          v=$(grep -oP 'WIN10CLEAN_VERSION=\K[0-9]+\.[0-9]+\.[0-9]+' win10-clean.bat | head -n1)
+          if [ -z "$v" ]; then echo "Version not found in win10-clean.bat"; exit 1; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Detected version: $v"
+
+      - name: Check if release already exists
+        id: check
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.ver.outputs.version }}" | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${{ steps.ver.outputs.version }} already exists - skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create GitHub Release
+        if: steps.check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          name: win10-clean ${{ github.ref_name }}
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: win10-clean v${{ steps.ver.outputs.version }}
           files: |
             win10-clean.bat
           generate_release_notes: true
-          body_path: CHANGELOG.md
