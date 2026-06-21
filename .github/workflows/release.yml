@@ -1,17 +1,17 @@
 name: Release
 
 # Builds the WPF GUI (.exe) and publishes a GitHub Release whenever the
-# version inside win10-clean.bat changes (on push to master) or on manual run.
-# To cut a new version: bump WIN10CLEAN_VERSION in win10-clean.bat, update
+# version inside winforge.bat changes (on push to master) or on manual run.
+# To cut a new version: bump WINFORGE_VERSION in winforge.bat, update
 # CHANGELOG.md, push to master -> the Release is created automatically.
 on:
   push:
     branches: [ master ]
     paths:
-      - 'win10-clean.bat'
-      - 'win10-clean-undo.bat'
+      - 'winforge.bat'
+      - 'winforge-undo.bat'
       - 'CHANGELOG.md'
-      - 'win10-clean-gui/**'
+      - 'WinForge/**'
   workflow_dispatch:
 
 permissions:
@@ -30,8 +30,8 @@ jobs:
         id: ver
         shell: bash
         run: |
-          v=$(grep -oP 'WIN10CLEAN_VERSION=\K[0-9]+\.[0-9]+\.[0-9]+' win10-clean.bat | head -n1)
-          if [ -z "$v" ]; then echo "Version not found in win10-clean.bat"; exit 1; fi
+          v=$(grep -oP 'WINFORGE_VERSION=\K[0-9]+\.[0-9]+\.[0-9]+' winforge.bat | head -n1)
+          if [ -z "$v" ]; then echo "Version not found in winforge.bat"; exit 1; fi
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "Detected version: $v"
 
@@ -54,7 +54,7 @@ jobs:
 
       - name: Build GUI (.exe)
         if: steps.check.outputs.exists == 'false'
-        run: dotnet build win10-clean-gui/win10-clean-gui.csproj -c Release
+        run: dotnet build WinForge/WinForge.csproj -c Release
 
       # Optional code-signing. Add repo secrets CERT_PFX_BASE64 (base64 of a
       # .pfx) and CERT_PASSWORD to enable it; otherwise this step is skipped.
@@ -77,14 +77,14 @@ jobs:
           if (-not $signtool) { Write-Error "signtool not found on runner."; exit 1 }
           & $signtool.FullName sign /fd SHA256 /f $pfx /p $env:CERT_PASSWORD `
             /tr http://timestamp.digicert.com /td SHA256 `
-            "win10-clean-gui/bin/Release/net48/win10-clean-gui.exe"
+            "WinForge/bin/Release/net48/WinForge.exe"
           Write-Host "Executable signed."
 
       - name: Generate SHA256 checksum
         if: steps.check.outputs.exists == 'false'
         shell: pwsh
         run: |
-          $exe = "win10-clean-gui/bin/Release/net48/win10-clean-gui.exe"
+          $exe = "WinForge/bin/Release/net48/WinForge.exe"
           (Get-FileHash $exe -Algorithm SHA256).Hash | Out-File -Encoding ascii "$exe.sha256"
           Write-Host "SHA256: $(Get-Content "$exe.sha256")"
 
@@ -93,10 +93,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.version }}
-          name: win10-clean v${{ steps.ver.outputs.version }}
+          name: WinForge v${{ steps.ver.outputs.version }}
           files: |
-            win10-clean.bat
-            win10-clean-undo.bat
-            win10-clean-gui/bin/Release/net48/win10-clean-gui.exe
-            win10-clean-gui/bin/Release/net48/win10-clean-gui.exe.sha256
+            winforge.bat
+            winforge-undo.bat
+            WinForge/bin/Release/net48/WinForge.exe
+            WinForge/bin/Release/net48/WinForge.exe.sha256
           generate_release_notes: true

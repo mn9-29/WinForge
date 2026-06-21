@@ -13,11 +13,11 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Win32;
 
-namespace Win10Clean
+namespace WinForge
 {
     public partial class MainWindow : Window
     {
-        const string Version = "2.6.0";
+        const string Version = "2.7.0";
         string _filter = "";
         bool _dark = true;
         string _logFile;
@@ -61,7 +61,7 @@ namespace Win10Clean
             try
             {
                 _logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                    "win10-clean_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".log");
+                    "winforge_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".log");
             }
             catch { _logFile = null; }
             BuildCatalog();
@@ -291,7 +291,7 @@ namespace Win10Clean
 
         const string RestoreCmd =
             "powershell -NoProfile -ExecutionPolicy Bypass -Command \"try { Enable-ComputerRestore -Drive 'C:\\' -ErrorAction Stop; " +
-            "Checkpoint-Computer -Description 'Before win10-clean' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop; " +
+            "Checkpoint-Computer -Description 'Before WinForge' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop; " +
             "'Restore point created.' } catch { 'WARN: restore point skipped - ' + $_.Exception.Message }\"";
 
         // ----------------------------------------------------------------- catalog
@@ -502,15 +502,15 @@ namespace Win10Clean
         {
             var dlg = new SaveFileDialog
             {
-                Filter = "win10-clean profile (*.w10c)|*.w10c",
-                FileName = "my-profile.w10c"
+                Filter = "WinForge profile (*.wforge)|*.wforge",
+                FileName = "my-profile.wforge"
             };
             if (dlg.ShowDialog() != true) return;
             try
             {
                 var lines = new List<string>
                 {
-                    "# win10-clean profile v" + Version,
+                    "# WinForge profile v" + Version,
                     "restorepoint=" + (cbRestore.IsChecked == true)
                 };
                 lines.AddRange(_all.Where(i => i.IsSelected).Select(i => "item=" + i.Title));
@@ -522,7 +522,7 @@ namespace Win10Clean
 
         void btnLoad_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new OpenFileDialog { Filter = "win10-clean profile (*.w10c)|*.w10c" };
+            var dlg = new OpenFileDialog { Filter = "WinForge profile (*.wforge)|*.wforge" };
             if (dlg.ShowDialog() != true) return;
             try
             {
@@ -655,7 +655,7 @@ namespace Win10Clean
             bool restore = cbRestore.IsChecked == true;
             if (selected.Count == 0 && !restore)
             {
-                MessageBox.Show("Nothing selected.", "win10-clean", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Nothing selected.", "WinForge", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -672,7 +672,7 @@ namespace Win10Clean
 
             SetBusy(true);
             txtLog.Clear();
-            Log("=== win10-clean v" + Version + " - applying ===");
+            Log("=== WinForge v" + Version + " - applying ===");
             if (_logFile != null) Log("Log file: " + _logFile);
             int total = (restore ? 1 : 0) + selected.Sum(i => i.Commands.Length);
             int done = 0;
@@ -706,7 +706,7 @@ namespace Win10Clean
         async void btnRevert_Click(object sender, RoutedEventArgs e)
         {
             var confirm = MessageBox.Show(
-                "Revert the settings/services changed by win10-clean?\n" +
+                "Revert the settings/services changed by WinForge?\n" +
                 "(Removed apps are NOT reinstalled - get them from the Microsoft Store.)",
                 "Revert settings", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (confirm != MessageBoxResult.Yes) return;
@@ -723,7 +723,7 @@ namespace Win10Clean
             SetBusy(false);
         }
 
-        // Mirrors win10-clean-undo.bat
+        // Mirrors winforge-undo.bat
         static readonly string[] RevertCommands =
         {
             // Re-enable services

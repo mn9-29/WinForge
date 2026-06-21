@@ -4,4 +4,4 @@
 *.user
 
 # Logs produced by the tool
-win10-clean_*.log
+winforge_*.log

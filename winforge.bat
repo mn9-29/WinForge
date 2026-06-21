@@ -1,8 +1,8 @@
 @echo off
 :: ============================================================================
-::  win10-clean.bat   -   Version 2.6.0
+::  winforge.bat   -   Version 2.7.0
 ::  Windows 10 / 11 Device Setup & Debloat - interactive edition
-::  (Prefer the GUI app 'win10-clean-gui.exe' for point-and-click control.)
+::  (Prefer the GUI app 'WinForge.exe' for point-and-click control.)
 ::
 ::  Three modes:
 ::    WORK    - office device: removes Xbox/games, disables Game DVR, etc.
@@ -12,13 +12,13 @@
 ::
 ::  KEEPS (work): Edge, Store, Office, Calculator, Photos, Notepad, Paint,
 ::               Snipping Tool, Sticky Notes.
-::  Undo:  run win10-clean-undo.bat  (or use the restore point).
+::  Undo:  run winforge-undo.bat  (or use the restore point).
 ::  Run as: Right click -> "Run as administrator"
 :: ============================================================================
 
 setlocal EnableExtensions EnableDelayedExpansion
-set "WIN10CLEAN_VERSION=2.6.0"
-title Windows Device Clean Setup  v%WIN10CLEAN_VERSION%
+set "WINFORGE_VERSION=2.7.0"
+title WinForge  v%WINFORGE_VERSION%
 color 0A
 
 :: ------------------------------------------------------------------ ADMIN ---
@@ -38,14 +38,14 @@ if %errorlevel% NEQ 0 (
 
 :: -------------------------------------------------------------------- LOG ---
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss"') do set "TS=%%i"
-set "LOG=%~dp0win10-clean_%TS%.log"
-call :log "=== win10-clean v%WIN10CLEAN_VERSION% started ==="
+set "LOG=%~dp0winforge_%TS%.log"
+call :log "=== WinForge v%WINFORGE_VERSION% started ==="
 
 :: ----------------------------------------------------------- MODE SELECT ----
 :mode_select
 cls
 echo ============================================================
-echo        WINDOWS DEVICE CLEAN SETUP   v%WIN10CLEAN_VERSION%
+echo        WINFORGE  -  DEVICE SETUP   v%WINFORGE_VERSION%
 echo ============================================================
 echo   What is this device mainly used for?
 echo ------------------------------------------------------------
@@ -65,7 +65,7 @@ goto :end
 :menu
 cls
 echo ============================================================
-echo    %MODE% MODE  -  win10-clean v%WIN10CLEAN_VERSION%
+echo    %MODE% MODE  -  WinForge v%WINFORGE_VERSION%
 echo ============================================================
 echo   [1] Quick clean        (recommended - Medium profile)
 echo   [2] Clean with profile (choose Light / Medium / Strong)
@@ -137,7 +137,7 @@ echo ============================================================
 echo.
 choice /C YN /N /M "Restart now to apply all changes? [Y/N]: "
 if errorlevel 2 goto :end
-shutdown /r /t 5 /c "Restarting to finish win10-clean setup"
+shutdown /r /t 5 /c "Restarting to finish WinForge setup"
 goto :end
 
 :: ============================================================================
@@ -149,7 +149,7 @@ goto :end
 echo.
 call :log "[Restore point] Creating System Restore Point..."
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore" /v SystemRestorePointCreationFrequency /t REG_DWORD /d 0 /f >nul 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Enable-ComputerRestore -Drive 'C:\' -ErrorAction Stop; Checkpoint-Computer -Description 'Before win10-clean' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop; Write-Host '    Restore point created.' } catch { Write-Host '    WARN: restore point skipped -' $_.Exception.Message }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Enable-ComputerRestore -Drive 'C:\' -ErrorAction Stop; Checkpoint-Computer -Description 'Before WinForge' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop; Write-Host '    Restore point created.' } catch { Write-Host '    WARN: restore point skipped -' $_.Exception.Message }"
 exit /b
 
 :: --------------------------------------------------- REMOVE BLOAT APPS ------
@@ -333,8 +333,8 @@ cls
 echo ------------------------------------------------------------
 echo   HOW TO UNDO
 echo ------------------------------------------------------------
-echo   1) Full rollback: System Restore -^> pick "Before win10-clean".
-echo   2) Reverse settings/services: run  win10-clean-undo.bat
+echo   1) Full rollback: System Restore -^> pick "Before WinForge".
+echo   2) Reverse settings/services: run  winforge-undo.bat
 echo      (right click -^> Run as administrator).
 echo   3) Reinstall a removed app: get it from Microsoft Store.
 echo ------------------------------------------------------------

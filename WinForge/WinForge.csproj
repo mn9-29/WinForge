@@ -4,14 +4,14 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net48</TargetFramework>
     <UseWPF>true</UseWPF>
-    <RootNamespace>Win10Clean</RootNamespace>
-    <AssemblyName>win10-clean-gui</AssemblyName>
+    <RootNamespace>WinForge</RootNamespace>
+    <AssemblyName>WinForge</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
-    <Product>win10-clean</Product>
-    <AssemblyTitle>win10-clean GUI</AssemblyTitle>
+    <Product>WinForge</Product>
+    <AssemblyTitle>WinForge</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>

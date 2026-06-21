@@ -1,8 +1,8 @@
-<Window x:Class="Win10Clean.MainWindow"
+<Window x:Class="WinForge.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:Win10Clean"
-        Title="win10-clean" Height="740" Width="920" Icon="app.ico"
+        xmlns:local="clr-namespace:WinForge"
+        Title="WinForge" Height="740" Width="920" Icon="app.ico"
         WindowStartupLocation="CenterScreen" Background="{DynamicResource BgBrush}">
 
     <Window.Resources>
@@ -49,8 +49,8 @@
         <!-- Header -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                <TextBlock Text="win10-clean" Foreground="#4EC9B0" FontSize="24" FontWeight="Bold"/>
-                <TextBlock x:Name="lblVersion" Text="v2.6.0" Foreground="{DynamicResource FgDimBrush}" FontSize="14"
+                <TextBlock Text="WinForge" Foreground="#4EC9B0" FontSize="24" FontWeight="Bold"/>
+                <TextBlock x:Name="lblVersion" Text="v2.7.0" Foreground="{DynamicResource FgDimBrush}" FontSize="14"
                            VerticalAlignment="Bottom" Margin="8,0,0,4"/>
                 <TextBlock Text="  -  tick what you want, then Apply" Foreground="{DynamicResource FgDimBrush}"
                            FontSize="13" VerticalAlignment="Bottom" Margin="6,0,0,4"/>

@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace Win10Clean
+namespace WinForge
 {
     public partial class App : Application
     {

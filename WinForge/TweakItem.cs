@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace Win10Clean
+namespace WinForge
 {
     /// <summary>
     /// One selectable action (remove an app, disable a service, a tweak, etc.).

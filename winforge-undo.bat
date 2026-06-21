@@ -1,7 +1,7 @@
 @echo off
 :: ============================================================================
-::  win10-clean-undo.bat   -   Version 1.2.0
-::  Reverses the settings/services changed by win10-clean.bat:
+::  winforge-undo.bat   -   Version 1.2.0
+::  Reverses the settings/services changed by winforge.bat:
 ::    * Re-enables the disabled services
 ::    * Removes the telemetry/ads/Cortana/GameDVR policy registry values
 ::    * Reverts gaming tweaks (mouse / visual effects / network latency)
@@ -14,7 +14,7 @@
 :: ============================================================================
 
 setlocal EnableExtensions
-title win10-clean - UNDO
+title WinForge - UNDO
 color 0E
 
 net session >nul 2>&1
@@ -26,9 +26,9 @@ if %errorlevel% NEQ 0 (
 
 cls
 echo ============================================================
-echo            WIN10-CLEAN  -  UNDO / RESTORE SETTINGS
+echo            WINFORGE  -  UNDO / RESTORE SETTINGS
 echo ============================================================
-echo  This reverses services and settings changed by win10-clean.
+echo  This reverses services and settings changed by WinForge.
 echo  (It does NOT reinstall removed apps - use the Store for that.)
 echo ------------------------------------------------------------
 pause
